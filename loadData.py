@@ -9,7 +9,8 @@ FLOATS_PER_CHUNK = 256
 STRUCT = '<' + 'f'*FLOATS_PER_CHUNK
 SAMPLE_RATE = 64e3
 BIT_PERIOD = 1e-3
-SYNC_THRESHOLD = 0.5
+SYNC_THRESHOLD = 0.9
+SLIP = 10
 # all on a file with ~51,249,152 floats
 # old does ~17.5s to load
 # single float per loop cycle takes ~16.7s
@@ -51,16 +52,13 @@ class DataProccessor:
                 bit = -1
             protoSignal += [bit] * self.bitLen
         return normalize(np.array(protoSignal, dtype=np.float32))
-    def __init__(self, data, samp_rate=64e3, sync_threshold=0.02815, bit_period=1e-3):
-        self.bitLen = int(bit_period * samp_rate)
-        self.thresh = sync_threshold
+    def __init__(self, data):
+        self.bitLen = int(BIT_PERIOD * SAMPLE_RATE)
+        self.thresh = SYNC_THRESHOLD
         self.state = STATE_SYNC
 
         self.dataIndex = 0
-        # Remap data points (should be DC balanced already)
-        #data = data[180:] # there's some averaging filter initial value crap from [0:162] or so. Skip it
-        # new filter initial crap is like 400*20. Might as well just throw away the first 0.5 seconds
-        self.data = data[int(samp_rate/2):]
+        self.data = data
         #plt.plot(self.data[:20000:10]); plt.show(); quit()
 
         self.pulseSync = self.patternToSignal(PATTERN_SYNC)
@@ -100,6 +98,7 @@ class DataProccessor:
                 self.sdbg_mc = correlation
                 self.sdbg_i = self.dataIndex
             if correlation > self.thresh:
+                plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Sync threshold');plt.show()
                 print('Sync detected. Finding best sync...')
                 while True:
                     self.dataIndex += 1
@@ -107,7 +106,9 @@ class DataProccessor:
                     if correlation2 > correlation:
                         correlation = correlation2
                     else:
-                        self.dataIndex += self.syncLen - 1
+                        self.dataIndex -= 1
+                        plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Best sync');plt.show()
+                        self.dataIndex += self.syncLen
                         self.state = STATE_DATA
                         return False # not out of data
             else:
@@ -123,9 +124,15 @@ class DataProccessor:
             corMax = max(corBit0, corBit1, corEnd)
             if len(self.message) == 104:
                 code.interact(local=dict(globals(), **locals()))
-            
+
             if corEnd == corMax:
-                plt.plot(self.dataWindow()); plt.show()
+                plt.plot(self.dataWindow());plt.plot(self.pulseDesync);plt.title('Desync');plt.show()
+                #di = self.dataIndex
+                #bl = self.bitLen
+                #plt.plot(self.data[di-bl*20:di+len(self.pulseDesync)+bl*5])
+                #plt.plot(np.concatenate([np.zeros(bl*20), self.pulseDesync, np.zeros(bl*5)]))
+                #plt.show(); quit()
+                #code.interact(local=dict(globals(), **locals()))
                 # finished message
                 self.state = STATE_SYNC
                 self.doMessage()
@@ -133,9 +140,20 @@ class DataProccessor:
             
             if corBit0 == corMax:
                 self.message += '0'
+                pulse = self.pulseBit0
             else:
                 self.message += '1'
-            self.dataIndex += self.bitSymbolLen
+                pulse = self.pulseBit1
+            # Go SLIP samples to the left and right searching for the best match for this bit
+            bestCor = -1
+            bestIndex = -1
+            for i in range(self.dataIndex - SLIP, self.dataIndex + SLIP +1):
+                self.dataIndex = i
+                cor = np.abs(np.dot(self.dataWindow(), pulse))
+                if cor > bestCor:
+                    bestCor = cor
+                    bestIndex = i
+            self.dataIndex = bestIndex + self.bitSymbolLen
         return True # out of data
         
     def work(self):
