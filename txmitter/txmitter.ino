@@ -27,7 +27,7 @@ void setup() {
   pinMode(4, OUTPUT);
 
   Serial.begin(9600);
-  Serial.println("CSE 490W Final Project transmitter v50. Msg on next line.");
+  Serial.println("CSE 490W Final Project transmitter v51. Msg on next line.");
   Serial.println((char*) msg);
 }
 
@@ -68,8 +68,8 @@ void loop() {
     }
     debugVal(0);
 
-    // datai = {3'd0, 8'byteIndex, 2'patternIndex, 3'bitIndex}
-    char dataByte = msg[datai >> 5];
+    // datai = {13'byteIndex, 3'bitIndex}
+    char dataByte = msg[datai >> 3];
     char dataBitMask = 1 << (datai & 0x0007); // 1 << 3'bitIndex
 
     if (dataByte & dataBitMask) { // bit '1' pattern
