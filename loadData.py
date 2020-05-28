@@ -73,13 +73,30 @@ class DataProccessor:
         self.debug = True
         self.sdbg_mc = 0
 
+    def messageReadByte(self):
+        if len(self.message) < 8:
+            return b''
+        b = 0
+        for i in range(8):
+            b |= int(self.message[i]) << i
+        self.message = self.message[8:]
+        return bytes([b])
     def doMessage(self):
         now = time.time()
-        print('msgDecoded', self.message)
-        if now > self.nextPrint:
-            print(self.message)
-            self.nextPrint = now + 1
-        self.message = ''
+        print('Got message:', self.message)
+        bs = b''
+        while True:
+            b = self.messageReadByte()
+            if len(b) == 0:
+                break
+            bs += b
+        print('Decoded message:', bs)
+        if len(self.message) > 0:
+            print('Orphan bits:', self.message)
+            self.message = ''
+        #if now > self.nextPrint:
+        #    print(self.message)
+        #    self.nextPrint = now + 1
         
     def dataLeft(self):
         return len(self.data) - self.dataIndex
@@ -122,8 +139,6 @@ class DataProccessor:
             corBit1 = np.abs(np.dot(self.pulseBit1, signal))
             corEnd = np.abs(np.dot(self.pulseDesync, signal))
             corMax = max(corBit0, corBit1, corEnd)
-            if len(self.message) == 104:
-                code.interact(local=dict(globals(), **locals()))
 
             if corEnd == corMax:
                 plt.plot(self.dataWindow());plt.plot(self.pulseDesync);plt.title('Desync');plt.show()
