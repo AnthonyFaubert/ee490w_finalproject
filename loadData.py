@@ -7,10 +7,10 @@ import struct, time, os, code
 FILE = '/tmp/data.bin'
 FLOATS_PER_CHUNK = 256
 STRUCT = '<' + 'f'*FLOATS_PER_CHUNK
-SAMPLE_RATE = 64e3
-BIT_PERIOD = 1e-3
+SAMPLE_RATE = 128e3
+BIT_PERIOD = 165e-6
 SYNC_THRESHOLD = 0.9
-SLIP = 10
+SLIP = 8
 # all on a file with ~51,249,152 floats
 # old does ~17.5s to load
 # single float per loop cycle takes ~16.7s
