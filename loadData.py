@@ -186,6 +186,7 @@ class DataProccessor:
             # Go SLIP samples to the left and right searching for the best match for this bit
             bestCor = -1
             bestIndex = -1
+            # FIXME: never checked to see if we have enough data to slip forward
             for i in range(self.dataIndex - SLIP, self.dataIndex + SLIP +1):
                 self.dataIndex = i
                 cor = np.abs(np.dot(self.dataWindow(), pulse))
