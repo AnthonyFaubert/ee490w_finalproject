@@ -83,7 +83,7 @@ class DataProccessor:
         return bytes([b])
     def doMessage(self):
         now = time.time()
-        print('Got message:', self.message)
+        rawMsg = self.message
         bs = b''
         while True:
             b = self.messageReadByte()
@@ -92,11 +92,9 @@ class DataProccessor:
             bs += b
         print('Decoded message:', bs)
         if len(self.message) > 0:
+            print('Raw message:', rawMsg)
             print('Orphan bits:', self.message)
             self.message = ''
-        #if now > self.nextPrint:
-        #    print(self.message)
-        #    self.nextPrint = now + 1
         
     def dataLeft(self):
         return len(self.data) - self.dataIndex
@@ -115,8 +113,9 @@ class DataProccessor:
                 self.sdbg_mc = correlation
                 self.sdbg_i = self.dataIndex
             if correlation > self.thresh:
-                plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Sync threshold');plt.show()
-                print('Sync detected. Finding best sync...')
+                if self.debug:
+                    plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Sync threshold');plt.show()
+                    print('Sync detected. Finding best sync...')
                 while True:
                     self.dataIndex += 1
                     correlation2 = np.abs(np.dot(self.dataWindow(), self.pulseSync))
@@ -124,7 +123,8 @@ class DataProccessor:
                         correlation = correlation2
                     else:
                         self.dataIndex -= 1
-                        plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Best sync');plt.show()
+                        if self.debug:
+                            plt.plot(self.dataWindow());plt.plot(self.pulseSync);plt.title('Best sync');plt.show()
                         self.dataIndex += self.syncLen
                         self.state = STATE_DATA
                         return False # not out of data
@@ -141,7 +141,9 @@ class DataProccessor:
             corMax = max(corBit0, corBit1, corEnd)
 
             if corEnd == corMax:
-                plt.plot(self.dataWindow());plt.plot(self.pulseDesync);plt.title('Desync');plt.show()
+                if self.debug:
+                    plt.plot(self.dataWindow());plt.plot(self.pulseDesync);plt.title('Desync');plt.show()
+                    self.debug = False
                 #di = self.dataIndex
                 #bl = self.bitLen
                 #plt.plot(self.data[di-bl*20:di+len(self.pulseDesync)+bl*5])
@@ -178,12 +180,12 @@ class DataProccessor:
                 outOfData = self.doSyncState()
             elif self.state == STATE_DATA:
                 outOfData = self.doDataState()
-        self.dataIndex = self.sdbg_i
-        self.state = STATE_SYNC
-        win = self.dataWindow()
-        print(np.dot(win, win))
-        plt.plot(win); plt.show()
-        code.interact(local=dict(globals(), **locals()))
+        #self.dataIndex = self.sdbg_i
+        #self.state = STATE_SYNC
+        #win = self.dataWindow()
+        #print(np.dot(win, win))
+        #plt.plot(win); plt.show()
+        #code.interact(local=dict(globals(), **locals()))
         
             
 
@@ -199,7 +201,7 @@ maxI = int(28e3)
 step = 16
 ms = np.linspace(0, maxI / 64.0, maxI * 1.0 / step)
 Y = vals[:maxI:step]
-yfill = -0.5
+yfill = 0.0
 plt.plot(ms, Y)
 plt.fill_between(ms, Y, y2=yfill, color='blue', alpha=0.4)
 plt.xlabel('time (ms)')
@@ -208,7 +210,7 @@ plt.tight_layout()
 
 plt.figure()
 Z = np.zeros(len(Y))
-Z[np.where(Y > -0.4)] = 1
+Z[np.where(Y > 0.5)] = 1
 plt.plot(ms, Z)
 plt.fill_between(ms, Z, y2=0, color='r', alpha=0.3)
 plt.xlabel('time (ms)')
