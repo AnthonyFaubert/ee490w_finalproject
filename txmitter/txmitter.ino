@@ -44,9 +44,9 @@ void setup() {
   setMsg(DEFAULT_MSG);
   
   Serial.begin(9600);
-  Serial.println("CSE 490W Final Project transmitter v63. Msg on next line.");
+  Serial.println("CSE 490W Final Project transmitter v64. Msg on next line.");
   // Println(msg):
-  for (uint8_t i = 0; i < msgLen; i++) Serial.print(msg[i]);
+  for (uint8_t i = 0; i < msgLen; i++) Serial.print((char) msg[i]);
   Serial.println();
 }
 
