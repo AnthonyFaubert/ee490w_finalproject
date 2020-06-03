@@ -39,6 +39,17 @@ PATTERN_BIT_END = PATTERN_SYNC[:len(PATTERN_BIT_0)]
 lens = [len(PATTERN_BIT_0), len(PATTERN_BIT_1), len(PATTERN_BIT_END)]
 assert(min(lens) == max(lens))
 
+def crc16(bs):
+    crc = 0
+    for b in bs:
+        crc ^= b
+        for i in range(8):
+            if crc & 1:
+                crc = (crc >> 1) ^ 0xA001
+            else:
+                crc = crc >> 1
+    return crc
+
 def normalize(sig):
     '''Normalize a signal and return it'''
     norm = np.sqrt(np.sum(sig * sig))
@@ -90,11 +101,22 @@ class DataProccessor:
             if len(b) == 0:
                 break
             bs += b
-        print('Decoded message:', bs)
-        if len(self.message) > 0:
-            print('Raw message:', rawMsg)
-            print('Orphan bits:', self.message)
-            self.message = ''
+        crcGood = False
+        if len(bs) > 2:
+            crcActual = crc16(bs[:-2])
+            crcExpected = (bs[-2] << 8) | bs[-1]
+            if crcActual == crcExpected:
+                crcGood = True
+            else:
+                print("CRCs don't match!", crcActual, crcExpected)
+        if crcGood:
+            print('Good message:', bs[:-2])
+        else:
+            print('Bad message:', bs)
+            if len(self.message) > 0:
+                print('Raw message:', rawMsg)
+                print('Orphan bits:', self.message)
+        self.message = ''
         
     def dataLeft(self):
         return len(self.data) - self.dataIndex
