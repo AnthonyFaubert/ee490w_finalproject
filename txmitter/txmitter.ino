@@ -44,7 +44,7 @@ void setup() {
   setMsg(DEFAULT_MSG);
   
   Serial.begin(9600);
-  Serial.println("CSE 490W Final Project transmitter v61. Msg on next line.");
+  Serial.println("CSE 490W Final Project transmitter v63. Msg on next line.");
   // Println(msg):
   for (uint8_t i = 0; i < msgLen; i++) Serial.print(msg[i]);
   Serial.println();
@@ -57,7 +57,7 @@ void loop() {
 
   static char nextMsg[256];
   static uint8_t nextMsgLen = 0;
-  unsigned long timeout = micros() + 1000UL;
+  unsigned long timeout = micros() + 160UL;
   
   if (syncPattern < SYNC_PATTERN_LEN) { // Do sync pattern
     if (debug == 0) {
