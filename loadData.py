@@ -83,6 +83,8 @@ class DataProccessor:
         self.nextPrint = 0
         self.debug = True
         self.sdbg_mc = 0
+        self.messageCount = 0
+        self.messageCountGood = 0
 
     def messageReadByte(self):
         if len(self.message) < 8:
@@ -111,12 +113,14 @@ class DataProccessor:
                 print("CRCs don't match!", crcActual, crcExpected)
         if crcGood:
             print('Good message:', bs[:-2])
+            self.messageCountGood += 1
         else:
             print('Bad message:', bs)
             if len(self.message) > 0:
                 print('Raw message:', rawMsg)
                 print('Orphan bits:', self.message)
         self.message = ''
+        self.messageCount += 1
         
     def dataLeft(self):
         return len(self.data) - self.dataIndex
@@ -203,6 +207,7 @@ class DataProccessor:
                 outOfData = self.doSyncState()
             elif self.state == STATE_DATA:
                 outOfData = self.doDataState()
+        print('Decoded %d messages, of which %d were good.' % (self.messageCount, self.messageCountGood))
         #self.dataIndex = self.sdbg_i
         #self.state = STATE_SYNC
         #win = self.dataWindow()
